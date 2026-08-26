@@ -21,33 +21,38 @@ DSH Web 的 GPT 式行内批注插件：在对话里选中助手回复的任意�
 4. （可选）再选别的文字继续加；胶囊里可管理 / 删除。
 5. 直接回车（或点发送）——正文会带上批注，模型逐条回应。
 
-## 架构
-
-- `lib/client.js`（浏览器）：全部功能——高亮 / 气泡 / 胶囊 / 编辑器、批注状态（localStorage）、发送前把摘要拼进草稿。
-- `lib/index.js`（宿主进程）：注册 `/_dsh/inline-comments/storage` 路由，把批注持久化到单一 JSON 文件（load / save / clear，仅 loopback、原子写、发送后清理）。
-- `cordis.patch.yml`：把插件行插入 web profile 的 roster。
-
 ## 安装
 
 ```bash
-dsh plugin --profile web add <package 路径或名称>
+dsh plugin --profile web add dsh-inline-comments
 ```
+
+> 尚未发布到 npm 时，可改为从本仓库安装，装完重启 `dsh web`。
+
+## 架构
+
+- `lib/client.js`（浏览器）：全部功能——高亮 / 气泡 / 胶囊 / 编辑器、批注状态（localStorage + 宿主 JSON 文件）、发送前把摘要拼进草稿。
+- `lib/index.js`（宿主进程）：注册 `/_dsh/inline-comments/storage` 路由，把批注持久化到单一 JSON 文件（load / save / clear，仅 loopback、原子写、发送后清理）。
+- `cordis.patch.yml`：把插件行插入 web profile 的 roster。
 
 ## 开发
 
 - 客户端热更：编辑 `lib/client.js` 后 dsh-client-hmr 自动重载（必要时刷新页面）。
 - 宿主改动需重启 `dsh web`。
-- 自测（位于 `/tmp/dsh-inline-test/`）：`test.mjs`（客户端 jsdom）、`refresh-test.mjs`（刷新重挂载）、`host-test.mjs`（宿主路由）、`host-storage-test.mjs`（宿主文件往返）、`client-host-test.mjs`（客户端 fetch 集成）。
+- 测试：`npm install && npm test`（自测脚本在 `tests/`，覆盖客户端 jsdom、刷新重挂载、宿主路由、宿主文件往返、客户端 fetch 集成）。
 
 ## 目录
 
 ```
-lib/client.js      客户端半部（全部功能）
-lib/index.js       宿主半部（存储路由 + JSON 文件持久化）
-cordis.patch.yml   web profile 的 bundle patch
-package.json       包元信息
+lib/client.js       客户端半部（全部功能）
+lib/index.js        宿主半部（存储路由 + JSON 文件持久化）
+cordis.patch.yml    web profile 的 bundle patch
+package.json        包元信息
+tests/              自测脚本（npm test）
+market-entry.yml    上架条目（awesome-dsh-plugin）
+LICENSE             MIT
 ```
 
 ## 许可
 
-MIT
+[MIT](./LICENSE)
