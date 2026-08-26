@@ -6,11 +6,17 @@
   "type": "module",
   "main": "lib/index.js",
   "files": ["lib", "cordis.patch.yml", "README.md"],
+  "scripts": {
+    "test": "node tests/test.mjs && node tests/refresh-test.mjs && node tests/host-test.mjs && node tests/host-storage-test.mjs && node tests/client-host-test.mjs"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zenvertao/dsh-inline-comments.git"
   },
   "keywords": ["deepseek", "harness", "dsh", "dsh-plugin", "annotation", "inline-comments", "comments"],
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  },
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": {
