@@ -47,12 +47,12 @@ function assert(name, cond, detail){ if(cond){pass++;console.log("PASS  "+name);
 
 console.log("flow1 new annotation -> count 1");
 select(0,6); clickAfford(); typeSave("test comment 1");
-assert("pill = 1 条注", pillText() === "1 条注", pillText());
+assert("pill = 1 条注释", pillText() === "1 条注释", pillText());
 assert("stored count = 1", storedCount("sess-1") === 1, String(storedCount("sess-1")));
 
 console.log("flow2 re-annotate SAME text -> edit, count stays 1");
 select(0,6); clickAfford(); typeSave("updated comment");
-assert("pill still 1 条注", pillText() === "1 条注", pillText());
+assert("pill still 1 条注释", pillText() === "1 条注释", pillText());
 assert("stored count still 1", storedCount("sess-1") === 1, String(storedCount("sess-1")));
 const stored = JSON.parse(window.localStorage.getItem("dsh-inline-comments:sess-1") || "[]");
 assert("comment updated", stored[0] && stored[0].comment === "updated comment", stored[0] && stored[0].comment);
@@ -65,7 +65,7 @@ assert("stored count 0", storedCount("sess-1") === 0, String(storedCount("sess-1
 
 console.log("flow4 new annotation then clearAll via pill x -> count 0");
 select(0,6); clickAfford(); typeSave("comment A");
-assert("pill = 1 条注 again", pillText() === "1 条注", pillText());
+assert("pill = 1 条注释 again", pillText() === "1 条注释", pillText());
 document.querySelector(".ic-pill .x").click();
 assert("after x, stored count 0", storedCount("sess-1") === 0, String(storedCount("sess-1")));
 
@@ -73,11 +73,11 @@ console.log("flow6 add two, delete first -> remaining renumbered to 1");
 select(0,6); clickAfford(); typeSave("comment A");
 select(7,13); clickAfford(); typeSave("comment B");
 assert("two annotations", storedCount("sess-1") === 2, String(storedCount("sess-1")));
-assert("pill = 2 条注", pillText() === "2 条注", pillText());
+assert("pill = 2 条注释", pillText() === "2 条注释", pillText());
 select(0,6); clickAfford();   // opens existing A
 document.querySelector(".ic-editor .ic-iconbtn").click(); // delete A
 assert("one annotation left", storedCount("sess-1") === 1, String(storedCount("sess-1")));
-assert("pill = 1 条注 after delete", pillText() === "1 条注", pillText());
+assert("pill = 1 条注释 after delete", pillText() === "1 条注释", pillText());
 openDetail();
 assert("detail renumbered to 1", detailQt().indexOf("1。 所选文本：") === 0, detailQt());
 
@@ -109,7 +109,7 @@ assert("annotate injects invisible char", fakeDraft === "\u200b", JSON.stringify
 // send via button -> appends summary to the visible draft (the feature), then clears locally
 const sb = document.createElement("button"); sb.textContent = "发送";
 document.body.appendChild(sb);
-sb.dispatchEvent(new window.MouseEvent("mousedown", { bubbles: true }));
+sb.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
 assert("send appends summary to draft", fakeDraft === "[1] 原文：本轮只做执行\n    批注：flow8 A", JSON.stringify(fakeDraft));
 assert("send clears annotations locally", storedCount("sess-1") === 0, String(storedCount("sess-1")));
 sb.remove();

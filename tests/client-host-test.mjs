@@ -63,7 +63,7 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
   // Phase 1: cross-refresh restore from host (localStorage empty, host seeded)
   await new Promise(r => setTimeout(r, 50));
   assert("host load op issued", fetchCalls.some(c => c.op === "load" && c.sessionId === "sess-1"), JSON.stringify(fetchCalls.map(c=>c.op)));
-  assert("pill restored from host (1 条注)", pillText() === "1 条注", pillText());
+  assert("pill restored from host (1 条注释)", pillText() === "1 条注释", pillText());
   assert("badge re-attached from host", !!document.querySelector(".ic-badge"));
   assert("localStorage mirrored from host", storedCount("sess-1") === 1, String(storedCount("sess-1")));
   // Phase 1b: opening the editor on a RESTORED annotation must position it (regression: was top-left)
@@ -95,7 +95,7 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
   fetchCalls.length = 0;
   const sb = document.createElement("button"); sb.textContent = "发送";
   document.body.appendChild(sb);
-  sb.dispatchEvent(new window.MouseEvent("mousedown", { bubbles: true }));
+  sb.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
   await new Promise(r => setTimeout(r, 20));
   assert("clear op issued to host on send", fetchCalls.some(c => c.op === "clear" && c.sessionId === "sess-1"), JSON.stringify(fetchCalls.map(c=>c.op)));
   assert("host store empty after send", !hostStore["sess-1"], JSON.stringify(hostStore["sess-1"]));
