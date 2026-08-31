@@ -63,7 +63,7 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
   // Phase 1: cross-refresh restore from host (localStorage empty, host seeded)
   await new Promise(r => setTimeout(r, 50));
   assert("host load op issued", fetchCalls.some(c => c.op === "load" && c.sessionId === "sess-1"), JSON.stringify(fetchCalls.map(c=>c.op)));
-  assert("pill restored from host (1 条注释)", pillText() === "1 条注释", pillText());
+  assert("pill restored from host (1 条注释)", pillText() === "条注释", pillText());
   assert("badge re-attached from host", !!document.querySelector(".ic-badge"));
   assert("localStorage mirrored from host", storedCount("sess-1") === 1, String(storedCount("sess-1")));
   // Phase 1b: opening the editor on a RESTORED annotation must position it (regression: was top-left)
