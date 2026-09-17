@@ -35,7 +35,28 @@ vm.runInContext(clientSrc, dom.getInternalVMContext());
 if (!captured) { console.log("FAIL client did not load"); process.exit(1); }
 const apply = captured.factory(() => { throw new Error("no require"); }).apply;
 
-const ctx = { sessions: { list: { getSnapshot: () => ({ current: "sess-1" }) } }, on: () => {} };
+// Fake composer shell, wired BEFORE apply() so the host-restore path has a shell to push the invisible
+// draft marker into. Regression: restored annotations used to leave the draft empty -> DSH keeps the send
+// button disabled -> the click never reaches injectBeforeSend ("点发送没反应").
+let fakeDraft = "";
+// Shell.submit is toggled per phase: absent reproduces a composer we can only inject into (legacy
+// fallback), present reproduces current DSH where the plugin takes the send click over.
+let shellSubmitEnabled = false;
+const submitCalls = [];
+const shellObj = {
+  setDraft: function(v){ fakeDraft = v; },
+  state: { getSnapshot: function(){ return { draft: fakeDraft }; } },
+  get submit(){
+    return shellSubmitEnabled
+      ? function(mode){ submitCalls.push({ mode: mode, draft: fakeDraft }); }
+      : undefined;
+  }
+};
+const ctx = {
+  sessions: { list: { getSnapshot: () => ({ current: "sess-1" }) } },
+  on: () => {},
+  conversation: { input: { shell: function(){ return shellObj; } } }
+};
 const dispose = apply(ctx);
 
 let pass = 0, fail = 0;
@@ -66,6 +87,7 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
   assert("pill restored from host (1 条注释)", pillText() === "条注释", pillText());
   assert("badge re-attached from host", !!document.querySelector(".ic-badge"));
   assert("localStorage mirrored from host", storedCount("sess-1") === 1, String(storedCount("sess-1")));
+  assert("draft marker pushed after host restore", fakeDraft === "\u200b", JSON.stringify(fakeDraft));
   // Phase 1b: opening the editor on a RESTORED annotation must position it (regression: was top-left)
   const badge1 = document.querySelector(".ic-badge");
   assert("badge present to open editor", !!badge1);
@@ -81,17 +103,25 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
 
   // Phase 2: save mirrors to host
   fetchCalls.length = 0;
+  fakeDraft = "";
   select(7, 13); clickAfford(); typeSave("client comment");
   await new Promise(r => setTimeout(r, 20));
   assert("save op issued to host", fetchCalls.some(c => c.op === "save" && c.sessionId === "sess-1"), JSON.stringify(fetchCalls.map(c=>c.op)));
   assert("host store updated with new comment", (hostStore["sess-1"] || []).some(a => a.comment === "client comment"), JSON.stringify(hostStore["sess-1"]));
+  assert("saved draft keeps text and marker", fakeDraft === "\u200b", JSON.stringify(fakeDraft));
+
+  // Phase 2b: backstop — marker wiped while annotations persist gets re-injected by the session poll
+  fakeDraft = "";
+  await new Promise(r => setTimeout(r, 900));
+  assert("draft marker re-injected by backstop poll", fakeDraft === "\u200b", JSON.stringify(fakeDraft));
+
+  // Phase 2c: a whitespace-only draft keeps the user's text (marker is appended, not overwritten)
+  fakeDraft = "   ";
+  window.dispatchEvent(new window.Event("resize"));
+  assert("whitespace draft preserved, marker appended", fakeDraft === "   \u200b", JSON.stringify(fakeDraft));
 
   // Phase 3: send clears host
-  let fakeDraft = "";
-  ctx.conversation = { input: { shell: function(){ return {
-    setDraft: function(v){ fakeDraft = v; },
-    state: { getSnapshot: function(){ return { draft: fakeDraft }; } }
-  }; } } };
+  fakeDraft = "";
   fetchCalls.length = 0;
   const sb = document.createElement("button"); sb.textContent = "发送";
   document.body.appendChild(sb);
@@ -100,6 +130,54 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
   assert("clear op issued to host on send", fetchCalls.some(c => c.op === "clear" && c.sessionId === "sess-1"), JSON.stringify(fetchCalls.map(c=>c.op)));
   assert("host store empty after send", !hostStore["sess-1"], JSON.stringify(hostStore["sess-1"]));
   assert("localStorage cleared after send", storedCount("sess-1") === 0, String(storedCount("sess-1")));
+  assert("no shell.submit -> nothing to take over", submitCalls.length === 0, JSON.stringify(submitCalls));
+
+  // Phase 3b: with a submit-capable shell the plugin must take the send click over — inject FIRST,
+  // then submit exactly once, and stop the click so the composer's own handler cannot also run.
+  // Regression: handing the click back needs a second click because the draft write re-renders the
+  // composer mid-click and the button's handler is lost.
+  shellSubmitEnabled = true;
+  select(7, 13); clickAfford(); typeSave("button path");
+  await new Promise(r => setTimeout(r, 20));
+  submitCalls.length = 0;
+  fakeDraft = "\u200b";
+  let bubbled = 0;
+  const bubbleSpy = () => { bubbled += 1; };
+  document.body.addEventListener("click", bubbleSpy);
+  const sb2 = document.createElement("button"); sb2.setAttribute("aria-label", "发送消息");
+  document.body.appendChild(sb2);
+  sb2.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+  await new Promise(r => setTimeout(r, 20));
+  document.body.removeEventListener("click", bubbleSpy);
+  assert("send click submits exactly once", submitCalls.length === 1, JSON.stringify(submitCalls));
+  assert("submit sees the injected summary", String((submitCalls[0] || {}).draft || "").indexOf("[1] ") === 0, JSON.stringify(String((submitCalls[0] || {}).draft).slice(0, 60)));
+  assert("submit uses queue mode", (submitCalls[0] || {}).mode === "queue", JSON.stringify((submitCalls[0] || {}).mode));
+  assert("send click does not reach the composer", bubbled === 0, String(bubbled));
+  shellSubmitEnabled = false;
+
+  // Phase 4: Enter inside the CONTENTEDITABLE composer (current DSH) must inject before submit.
+  // Regression: the handler required tagName === "textarea", so DSH's rich-text composer never
+  // triggered injection — the annotations stayed in the pill and never reached the message.
+  const ce = document.createElement("div");
+  ce.setAttribute("data-composer-input", "");
+  ce.setAttribute("contenteditable", "true");
+  document.body.appendChild(ce);
+  fakeDraft = "";
+  select(7, 13); clickAfford(); typeSave("enter path");
+  await new Promise(r => setTimeout(r, 20));
+  assert("contenteditable composer: draft marker pushed", fakeDraft === "\u200b", JSON.stringify(fakeDraft));
+  ce.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+  await new Promise(r => setTimeout(r, 20));
+  assert("contenteditable composer: Enter injects the summary", fakeDraft.indexOf("[1] ") === 0, JSON.stringify(fakeDraft.slice(0, 70)));
+  assert("contenteditable composer: annotations cleared after inject", document.querySelector(".ic-pill").style.display === "none" && !document.querySelector(".ic-badge"), document.querySelector(".ic-pill").style.display);
+  // Shift+Enter must stay a newline: no injection, annotations untouched.
+  fakeDraft = "";
+  select(7, 13); clickAfford(); typeSave("enter path 2");
+  await new Promise(r => setTimeout(r, 20));
+  fakeDraft = "line";
+  ce.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", shiftKey: true, bubbles: true, cancelable: true }));
+  await new Promise(r => setTimeout(r, 20));
+  assert("contenteditable composer: Shift+Enter does not inject", fakeDraft === "line", JSON.stringify(fakeDraft));
 
   dispose();
   console.log("RESULT client-host pass=" + pass + " fail=" + fail);
