@@ -180,6 +180,16 @@ function storedCount(k){ const v = JSON.parse(window.localStorage.getItem("dsh-i
   assert("contenteditable composer: Shift+Enter does not inject", fakeDraft === "line", JSON.stringify(fakeDraft));
 
   dispose();
+  // Phase 5: dispose() must unhook every document-level listener. A leaked one survives an HMR
+  // reload as a zombie instance that still injects on send clicks (and can double-inject).
+  assert("dispose removes the plugin DOM", !document.querySelector(".ic-root"), "root still present");
+  const draftAfterDispose = fakeDraft;
+  const sbDispose = document.createElement("button"); sbDispose.textContent = "发送";
+  document.body.appendChild(sbDispose);
+  sbDispose.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+  await new Promise(r => setTimeout(r, 20));
+  assert("dispose unhooks the send-click listener", fakeDraft === draftAfterDispose, "still injected after dispose: " + JSON.stringify(String(fakeDraft).slice(0, 40)));
+
   console.log("RESULT client-host pass=" + pass + " fail=" + fail);
   process.exit(fail ? 1 : 0);
 })();
