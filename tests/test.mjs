@@ -128,6 +128,26 @@ ta8.value = "shift-newline"; ta8.dispatchEvent(new window.Event("input", { bubbl
 ta8.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", shiftKey: true, bubbles: true }));
 assert("editor Shift+Enter does not save", storedCount("sess-1") === 1, String(storedCount("sess-1")));
 
+console.log("flow9 editor stays visible and lifts above the composer for a low selection");
+// Regression: a selection sitting next to the composer placed the editor inside the composer band, where
+// the badge anti-overlap policy hid it (visibility:hidden == "clicked 添加注释, nothing appeared").
+const seat = document.createElement("div");
+seat.setAttribute("data-composer-seat", "");
+seat.getBoundingClientRect = () => ({ left: 100, right: 900, top: 700, bottom: 760, width: 800, height: 60 });
+document.body.appendChild(seat);
+select(0,6);
+const aff9 = document.querySelector(".ic-afford");
+const ed9 = document.querySelector(".ic-editor");
+Object.defineProperty(ed9, "offsetWidth", { value: 320, configurable: true });
+Object.defineProperty(ed9, "offsetHeight", { value: 161, configurable: true });
+// the panel as placed would sit at y=650..811, i.e. overlapping the composer seat (top 700)
+ed9.getBoundingClientRect = () => ({ left: 214, right: 534, top: 650, bottom: 811, width: 320, height: 161 });
+// anchor the affordance low on screen: top 650 + 161 tall would reach 811, deep into the composer (top 700)
+aff9.getBoundingClientRect = () => ({ left: 110, right: 200, top: 650, bottom: 678, width: 90, height: 28 });
+aff9.dispatchEvent(new window.MouseEvent("mousedown", { bubbles: true }));
+assert("editor visible for a low selection", ed9.style.display === "block" && ed9.style.visibility === "visible", "display=" + ed9.style.display + " visibility=" + ed9.style.visibility);
+assert("editor lifted above the composer band", ed9.style.top === "531px", "top=" + ed9.style.top);
+
 if (dispose) dispose();
 console.log("RESULT pass=" + pass + " fail=" + fail);
 process.exit(fail ? 1 : 0);
