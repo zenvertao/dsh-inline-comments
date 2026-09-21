@@ -29,8 +29,6 @@ DSH Web 的 GPT 式行内批注插件：在对话里选中助手回复的任意�
 dsh plugin --profile web add dsh-inline-comments
 ```
 
-> 尚未发布到 npm 时，可改为从本仓库安装，装完重启 `dsh web`。
-
 ## 架构
 
 - `lib/client.js`（浏览器）：全部功能——高亮 / 气泡 / 胶囊 / 编辑器、批注状态（localStorage + 宿主 JSON 文件）、发送前把摘要拼进草稿。
@@ -54,6 +52,10 @@ tests/              自测脚本（npm test）
 market-entry.yml    上架条目（awesome-dsh-plugin）
 LICENSE             MIT
 ```
+
+## 反馈
+
+问题反馈与功能建议请提交至 [GitHub Issues](https://github.com/zenvertao/dsh-inline-comments/issues)。
 
 ## 许可
 
