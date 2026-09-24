@@ -148,6 +148,47 @@ aff9.dispatchEvent(new window.MouseEvent("mousedown", { bubbles: true }));
 assert("editor visible for a low selection", ed9.style.display === "block" && ed9.style.visibility === "visible", "display=" + ed9.style.display + " visibility=" + ed9.style.visibility);
 assert("editor lifted above the composer band", ed9.style.top === "531px", "top=" + ed9.style.top);
 
+console.log("flow10 overlay root stays below DSH's own floating layers");
+// DSH keeps message content and layout chrome at z-index <= 60, but its own panels/menus/popovers
+// start at 100 (jobs, commands, model selection, attachments) and reach 1100. Our overlay root must
+// sit in between: above the content it annotates, below anything DSH floats on top of it.
+const cssText = Array.from(document.querySelectorAll("style")).map((s) => s.textContent || "").join("\n");
+const rootZ = Number((/\.ic-root\{[^}]*z-index:(\d+)/.exec(cssText) || [])[1]);
+assert("root z-index parses", Number.isFinite(rootZ), String(rootZ));
+assert("root above content (>=7) but below DSH overlays (<=99)", rootZ >= 7 && rootZ <= 99, "z-index=" + rootZ);
+
+console.log("flow11 session id: prefer the 0.1.7 DOM attribute, fall back to the sessions store");
+// Regression: DSH 0.1.7 dropped `sessions.list.getSnapshot().current` and moved the active session id
+// onto the conversation DOM. Without a resolvable id the plugin's composer bridge silently no-ops.
+if (document.querySelector(".ic-pill .x")) document.querySelector(".ic-pill .x").click();
+const sessEl = document.createElement("div");
+sessEl.setAttribute("data-conversation-session", "sess-DOM");
+document.body.appendChild(sessEl);
+select(0,6); clickAfford(); typeSave("dom session");
+assert("annotation stored under the DOM session id", storedCount("sess-DOM") === 1, JSON.stringify({ dom: storedCount("sess-DOM"), store: storedCount("sess-1") }));
+assert("store key untouched while the DOM attribute wins", storedCount("sess-1") === 0, String(storedCount("sess-1")));
+if (document.querySelector(".ic-pill .x")) document.querySelector(".ic-pill .x").click();
+sessEl.remove();
+select(0,6); clickAfford(); typeSave("store session fallback");
+assert("falls back to the sessions store id", storedCount("sess-1") === 1, JSON.stringify({ dom: storedCount("sess-DOM"), store: storedCount("sess-1") }));
+
+console.log("flow12 capability diagnostics: a shell that lost setDraft() warns instead of dying silently");
+// Regression for the hardest failure class to diagnose from the UI: the send path silently no-ops when
+// DSH moves a composer-bridge method. The plugin must report it (console.warn) and keep the annotations.
+const warns = [];
+const realWarn = window.console.warn;
+window.console.warn = (m) => warns.push(String(m));
+const savedConv = ctx.conversation;
+ctx.conversation = { input: { shell: () => ({ state: { getSnapshot: () => ({ draft: "typed" }) } }) } };  // setDraft() gone
+const sbW = document.createElement("button"); sbW.textContent = "发送";
+document.body.appendChild(sbW);
+sbW.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+assert("warns about the missing setDraft()", warns.some((w) => w.indexOf("no setDraft()") >= 0), JSON.stringify(warns.slice(0, 2)));
+assert("annotations survive an impossible injection", storedCount("sess-1") >= 1, String(storedCount("sess-1")));
+sbW.remove();
+ctx.conversation = savedConv;
+window.console.warn = realWarn;
+
 if (dispose) dispose();
 console.log("RESULT pass=" + pass + " fail=" + fail);
 process.exit(fail ? 1 : 0);
