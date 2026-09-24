@@ -1,0 +1,13 @@
+{
+  "releaseTargets": ["0.1.7-rc.2"],
+  "latestTested": "0.1.7-rc.2",
+  "supported": ["0.1.5-rc.1", "0.1.7-rc.2"],
+  "policy": "latest-targeted, low-coupling, fallbacks, self-tested",
+  "interfaces": {
+    "dom": ["[data-conversation-scroll]", "[data-composer-input]", "[data-conversation-session]"],
+    "host": ["webServer route /_dsh/inline-comments/storage"],
+    "avoided": ["typert remotes", "internal store shapes"]
+  },
+  "sessionIdResolvers": ["[data-conversation-session] (0.1.7+)", "sessions.list.getSnapshot().current (0.1.5)"],
+  "selfTest": "npm test"
+}

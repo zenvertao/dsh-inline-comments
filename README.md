@@ -53,6 +53,17 @@ market-entry.yml    上架条目（awesome-dsh-plugin）
 LICENSE             MIT
 ```
 
+## 兼容性
+
+面向**最新版 DSH** 开发，不追求兼容所有旧版本；但接口一律走低耦合通道，并把"取不到接口"变成**看得见的日志**，而不是静默失效（静默失效的典型症状：批注加得上、却发不出去）。
+
+- **测试基准**：桌面版（`/Applications/DeepSeek Harness.app`，当前 `0.1.7-rc.2`）—— 它比 Homebrew 的 CLI 发行版更新，插件的新接口风险会先在它这里暴露。
+- **已实测**：`0.1.7-rc.2`（桌面版）、`0.1.5-rc.1`（web profile）。
+- **低耦合接口**：只用 DOM 契约（`[data-conversation-scroll]`、`[data-composer-input]`、`[data-conversation-session]`）与宿主 `webServer` 的 HTTP 路由；**不使用** typert 生成式远程接口，也不读内部 store 结构。
+- **回退**：同一能力尽量留两条路 —— 当前会话 ID（DOM 属性优先 → sessions store 兜底）；发送注入（shell API 优先 → 点发送按钮时由插件接管 → 桥不可用时保留批注并告警）。
+- **自测**：`npm test`（88 项）覆盖客户端 jsdom、刷新重挂载、宿主路由与文件往返、会话 ID 的优先级与回退、以及"能力缺失必须告警且不丢批注"。
+- **升级 DSH 之后**：先跑 `npm test`，再手测一遍（选中 → 批注 → 发送）；若控制台出现 `[dsh-inline-comments]` 开头的告警，告警里点名的那条接口就是这次被移动的，按它适配即可。
+
 ## 反馈
 
 问题反馈与功能建议请提交至 [GitHub Issues](https://github.com/zenvertao/dsh-inline-comments/issues)。
