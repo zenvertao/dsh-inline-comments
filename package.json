@@ -1,6 +1,6 @@
 {
   "name": "dsh-inline-comments",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "GPT 式 inline 注释：在 DSH 对话中选中助手文本，就地加批注（无语音）。交互：选中文字→+添加注释→编辑器→保存后高亮+编号气泡+N 条注胶囊。",
   "homepage": "https://zenver.vercel.app/",
   "type": "module",
