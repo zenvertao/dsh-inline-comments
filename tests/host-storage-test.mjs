@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { apply } from "../lib/index.js";
 
 const dir = mkdtempSync(join(tmpdir(), "dic-storage-"));
@@ -72,11 +72,35 @@ async function call(body, opts) {
   r = await call({ op: "load", sessionId: "s1" });
   assert("cleared -> empty", r.body.annotations.length === 0, JSON.stringify(r.body));
 
-  // save empty array == clear (no residue key in the file)
-  await call({ op: "save", sessionId: "s3", annotations: [{ id: 1, text: "x", comment: "y" }] });
-  await call({ op: "save", sessionId: "s3", annotations: [] });
-  const raw = JSON.parse(readFileSync(storeFile, "utf8"));
-  assert("save empty removes key (no residue)", !("s3" in raw), JSON.stringify(raw));
+  // save merges instead of replacing. Two windows can hold one session (the web profile and the
+  // desktop app share this file), so a window that loaded earlier must not wipe a later writer's
+  // annotations, and an empty save is a no-op rather than a wipe (wiping is the explicit `clear`).
+  await call({ op: "save", sessionId: "s3", annotations: [{ id: 11, text: "a", comment: "mine", t: 100 }] });
+  const afterEmpty = await call({ op: "save", sessionId: "s3", annotations: [] });
+  assert("empty save is a no-op, not a wipe", afterEmpty.body.annotations.length === 1, JSON.stringify(afterEmpty.body));
+  const merged = await call({ op: "save", sessionId: "s3", annotations: [{ id: 12, text: "b", comment: "theirs", t: 200 }] });
+  assert("two writers merge", merged.body.annotations.map((a) => a.id).join(",") === "11,12", JSON.stringify(merged.body));
+  const edited = await call({ op: "save", sessionId: "s3", annotations: [{ id: 11, text: "a", comment: "edited", t: 300 }] });
+  assert("newer edit wins", edited.body.annotations.filter((a) => a.id === 11)[0].comment === "edited", JSON.stringify(edited.body));
+  const stale = await call({ op: "save", sessionId: "s3", annotations: [{ id: 11, text: "a", comment: "stale", t: 50 }] });
+  assert("older copy ignored", stale.body.annotations.filter((a) => a.id === 11)[0].comment === "edited", JSON.stringify(stale.body));
+  const removed = await call({ op: "save", sessionId: "s3", annotations: [{ id: 11, text: "a", comment: "edited", t: 300 }], deleted: [12] });
+  assert("explicit delete removes the id", removed.body.annotations.map((a) => a.id).join(",") === "11", JSON.stringify(removed.body));
+  const revive = await call({ op: "save", sessionId: "s3", annotations: [{ id: 12, text: "b", comment: "theirs", t: 200 }] });
+  assert("stale list cannot resurrect a deletion", revive.body.annotations.map((a) => a.id).join(",") === "11", JSON.stringify(revive.body));
+  await call({ op: "clear", sessionId: "s3" });
+  const afterClear = await call({ op: "save", sessionId: "s3", annotations: [{ id: 11, text: "a", comment: "edited", t: 300 }] });
+  assert("a clear survives a stale save", afterClear.body.annotations.length === 0, JSON.stringify(afterClear.body));
+  const fresh = await call({ op: "save", sessionId: "s3", annotations: [{ id: 21, text: "n", comment: "new", t: Date.now() }] });
+  assert("fresh annotations after a clear still land", fresh.body.annotations.map((a) => a.id).join(",") === "21", JSON.stringify(fresh.body));
+
+  // v1 stored a bare array per session; reading it must still work and upgrade its shape.
+  const rawV1 = JSON.parse(readFileSync(storeFile, "utf8"));
+  rawV1.s9 = [{ id: 7, so: 1, eo: 4, text: "old", comment: "v1" }];
+  writeFileSync(storeFile, JSON.stringify(rawV1));
+  const legacy = await call({ op: "load", sessionId: "s9" });
+  assert("v1 array storage still loads", legacy.body.annotations.length === 1 && legacy.body.annotations[0].comment === "v1", JSON.stringify(legacy.body));
+  assert("v1 annotation gets a merge timestamp", legacy.body.annotations[0].t === 0, JSON.stringify(legacy.body));
 
   // security: non-loopback / non-POST / cross-site rejected
   r = await call({ op: "load", sessionId: "s1" }, { remoteAddress: "203.0.113.7" });
