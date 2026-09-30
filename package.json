@@ -12,7 +12,7 @@
     "compatibility.json"
   ],
   "scripts": {
-    "test": "node tests/test.mjs && node tests/refresh-test.mjs && node tests/merge-test.mjs && node tests/host-test.mjs && node tests/host-storage-test.mjs && node tests/client-host-test.mjs"
+    "test": "node tests/test.mjs && node tests/refresh-test.mjs && node tests/merge-test.mjs && node tests/anchor-test.mjs && node tests/host-test.mjs && node tests/host-storage-test.mjs && node tests/client-host-test.mjs"
   },
   "repository": {
     "type": "git",
