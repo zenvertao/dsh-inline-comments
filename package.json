@@ -12,7 +12,7 @@
     "compatibility.json"
   ],
   "scripts": {
-    "test": "node tests/test.mjs && node tests/refresh-test.mjs && node tests/merge-test.mjs && node tests/anchor-test.mjs && node tests/host-test.mjs && node tests/host-storage-test.mjs && node tests/client-host-test.mjs"
+    "test": "node tests/test.mjs && node tests/refresh-test.mjs && node tests/merge-test.mjs && node tests/anchor-test.mjs && node tests/host-test.mjs && node tests/host-storage-test.mjs && node tests/client-host-test.mjs && node tests/slot-bridge-test.mjs"
   },
   "repository": {
     "type": "git",
@@ -37,7 +37,6 @@
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-locale"
       ],
       "platform": "web"
