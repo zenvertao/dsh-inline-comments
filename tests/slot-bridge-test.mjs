@@ -47,7 +47,7 @@ const inputActions = {
   setDraft: function(v){ draft = v; },
   insertText: function(){},
   captureInsertion: function(){ return {}; },
-  submit: function(){ submits.push(draft); }
+  submit: function(mode){ submits.push({ draft: draft, mode: mode }); }
 };
 const slots = {
   inject: function(name, cb){ injectedInto.push(name); cb(); },
@@ -91,6 +91,14 @@ function clickSend(label){
   assert("plugin injects into conversation.input.overlay", injectedInto.indexOf("conversation.input.overlay") >= 0, JSON.stringify(injectedInto));
   const bridgeEntry = occupants.filter(o => o.desc && o.desc.id === "dsh-inline-comments-bridge")[0];
   assert("bridge occupant registered under its own id", !!bridgeEntry, JSON.stringify(occupants.map(o => o.desc && o.desc.id)));
+
+  // A composer whose useInput throws cannot give us the draft; handing the bridge out anyway would
+  // leave an empty cache that pushDraft() writes back over the user's text.
+  if (bridgeEntry) bridgeEntry.Component({ inputActions: inputActions, sessionId: "sess-1", useInput: function(){ throw new Error("boom"); } });
+  addAnnotation("after throwing hook");
+  await tick(20);
+  assert("a composer with an unreadable draft never gets a bridge", draft === "", JSON.stringify(draft));
+
   if (bridgeEntry) {
     const returned = bridgeEntry.Component({ inputActions: inputActions, sessionId: "sess-1", useInput: (sel) => sel({ draft: draft }) });
     assert("bridge occupant renders nothing", returned === null || returned === undefined, JSON.stringify(returned));
@@ -99,6 +107,8 @@ function clickSend(label){
   render();
   await tick(30);
   assert("load op still issued after apply", fetchOps.indexOf("load") >= 0, JSON.stringify(fetchOps));
+  window.dispatchEvent(new window.Event("resize"));   // drawAll -> redraw -> pushDraft
+  assert("marker pushed once the bridge is live", draft === "\u200b", JSON.stringify(draft));
 
   // ---- Send-button path: inject, then submit exactly once ---------------------------------------
   addAnnotation("slot path");
@@ -114,7 +124,8 @@ function clickSend(label){
   document.body.removeEventListener("click", bubbleSpy);
 
   assert("send click submits through inputActions exactly once", submits.length === 1, JSON.stringify(submits));
-  assert("submit sees the injected summary first", String(submits[0] || "").indexOf("[1] ") === 0, JSON.stringify(String(submits[0]).slice(0, 60)));
+  assert("submit sees the injected summary first", String(submits[0].draft || "").indexOf("[1] ") === 0, JSON.stringify(String(submits[0].draft).slice(0, 60)));
+  assert("submit forwards the queue mode", submits[0].mode === "queue", JSON.stringify(submits[0].mode));
   assert("send click does not reach the composer", bubbled === 0, String(bubbled));
 
   // ---- Enter path -------------------------------------------------------------------------------
@@ -138,7 +149,7 @@ function clickSend(label){
   submits.length = 0;
   clickSend("发送");
   await tick(20);
-  const sent = String(submits[0] || "");
+  const sent = String(submits[0].draft || "");
   assert("injected draft keeps the user's body after the divider", sent.indexOf("\n\n---\n\nhello") >= 0, JSON.stringify(sent.slice(0, 120)));
   assert("injection happens once per send", submits.length === 1, JSON.stringify(submits));
 

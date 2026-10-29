@@ -1,13 +1,39 @@
 {
-  "releaseTargets": ["0.1.7-rc.2"],
-  "latestTested": "0.1.7-rc.2",
-  "supported": ["0.1.5-rc.1", "0.1.7-rc.2"],
+  "releaseTargets": [
+    "0.2.1-rc.3"
+  ],
+  "latestTested": "0.2.1-rc.3",
+  "supported": [
+    "0.1.5-rc.1",
+    "0.1.7-rc.2",
+    "0.2.0-rc.2",
+    "0.2.1-rc.3"
+  ],
   "policy": "latest-targeted, low-coupling, fallbacks, self-tested",
   "interfaces": {
-    "dom": ["[data-conversation-scroll]", "[data-composer-input]", "[data-conversation-session]"],
-    "host": ["webServer route /_dsh/inline-comments/storage"],
-    "avoided": ["typert remotes", "internal store shapes"]
+    "dom": [
+      "[data-conversation-scroll]",
+      "[data-composer-input]",
+      "[data-conversation-session]"
+    ],
+    "slots": [
+      "conversation.input.overlay (0.2.x composer bridge)"
+    ],
+    "host": [
+      "webServer route /_dsh/inline-comments/storage"
+    ],
+    "avoided": [
+      "typert remotes",
+      "internal store shapes"
+    ],
+    "legacy": [
+      "ctx.conversation.input.shell() (kept for 0.1.x)"
+    ]
   },
-  "sessionIdResolvers": ["[data-conversation-session] (0.1.7+)", "sessions.list.getSnapshot().current (0.1.5)"],
-  "selfTest": "npm test"
+  "sessionIdResolvers": [
+    "[data-conversation-session] (0.1.7+)",
+    "sessions.list.getSnapshot().current (0.1.5)"
+  ],
+  "selfTest": "npm test",
+  "note": "0.2.x exposes the composer draft/actions only through the conversation.input.overlay slot occupant; the legacy shell path is tried first so 0.1.x keeps working."
 }
