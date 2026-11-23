@@ -77,7 +77,7 @@ assert("only one action survives", document.querySelectorAll("[data-ic-inline-ac
 assert("survivor lives in the surface", document.querySelector("[data-ic-inline-action]").parentNode === surface, "elsewhere");
 
 console.log("flow3 clicking it opens the editor for the current selection");
-btn.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+btn.dispatchEvent(new window.MouseEvent("pointerdown", { bubbles: true, cancelable: true }));
 const editor = document.querySelector(".ic-editor");
 assert("editor opened", !!editor && editor.style.display === "block", editor && editor.style.display);
 assert("editor quotes the selected text", document.querySelector(".ic-editor .quote").textContent === "本轮只做执行", document.querySelector(".ic-editor .quote").textContent);
