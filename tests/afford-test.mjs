@@ -66,6 +66,8 @@ console.log("flow3 DSH's own floating toolbar pushes the pill up a step");
 const bar = document.createElement("div");
 bar.id = "native-selection-bar";
 bar.style.cssText = "position:fixed;left:90px;top:250px;width:160px;height:34px;";
+// jsdom 不做布局，显式给出尺寸：探针要靠"小个子=浮动条"来区分正文
+bar.getBoundingClientRect = () => ({ left: 90, top: 250, width: 160, height: 34, right: 250, bottom: 284 });
 document.body.appendChild(bar);          // outside [data-conversation-scroll] = a floating UI
 underPoint = "bar";
 select();
