@@ -62,6 +62,13 @@ assert("it sits next to the quote action", JSON.stringify(kids) === JSON.stringi
 assert("floating pill hidden while the surface hosts us", pill() === "none" || pill() === "(none)", pill());
 assert("label reads like an action", btn && btn.textContent.indexOf("添加注释") >= 0, btn && btn.textContent);
 
+console.log("flow2a our button copies the official action's computed style");
+quote.style.fontSize = "13px"; quote.style.padding = "6px 14px"; quote.style.borderRadius = "999px";
+select();
+assert("font-size copied from the official action", inline().style.fontSize === "13px", inline().style.fontSize);
+assert("padding copied from the official action", inline().style.padding === "6px 14px" || inline().style.paddingTop === "6px", JSON.stringify(inline().style.padding + "|" + inline().style.paddingTop));
+assert("radius copied from the official action", inline().style.borderRadius === "999px", inline().style.borderRadius);
+
 console.log("flow2b a stale duplicate (re-render or second instance) is cleaned up");
 const staleA = document.createElement("button"); staleA.setAttribute("data-ic-inline-action", ""); staleA.textContent = "＋ 添加注释";
 surface.appendChild(staleA);
