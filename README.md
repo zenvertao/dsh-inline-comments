@@ -13,6 +13,7 @@ DSH Web 的 GPT 式行内批注插件：在对话里选中助手回复的任意�
 - 发送时：批注区（`[i] 原文：… / 批注：…`）置于正文之前，中间以 `---` 分割线隔开，模型下一轮逐条回答。
 - 发送后即清理（批注是「一次性」的，随发送消费）。
 - 支持中文 / 英文（跟随 DSH 语言设置），自动适配亮色 / 暗色主题。
+- **并入官方文本工具条（0.2.x）**：选中文字后，与官方「引用」**同一排**出现「＋ 添加注释」；没有这条工具条时（0.1.x、或选区不在可交互文本区）自动回退成浮动按钮。
 - **定位可靠**：记录选中文字前后的上下文，同一句话出现两次也能贴到正确的那一处；原文被改动导致找不到时，胶囊与详情会**明确标出「原文已变」**（批注内容不丢）。
 - **多窗口 / 多端安全合并**：宿主侧按批注 id 合并（不是整表覆盖），web 版与桌面版共用同一份存储时互不覆盖；删除与清空带时间戳，陈旧窗口不会把删掉的批注"复活"。
 - 跨刷新持久化：批注镜像到宿主侧单一 JSON 文件（默认 `~/.dsh/dsh-inline-comments.json`，可用 `storagePath` 配置覆盖），刷新后自动恢复；发送后自动清理，不留残留。浏览器 localStorage 仅作同页快速镜像。
@@ -61,9 +62,9 @@ LICENSE             MIT
 
 - **测试基准**：桌面版（`/Applications/DeepSeek Harness.app`，当前 `0.2.1-rc.3`）—— 它比 Homebrew 的 CLI 发行版更新，插件的新接口风险会先在它这里暴露。
 - **已实测**：`0.2.1-rc.3` / `0.2.0-rc.2`（桌面版，0.2.x 走 `conversation.input.overlay` 槽位桥接）、`0.1.7-rc.2`、`0.1.5-rc.1`（web profile）。
-- **低耦合接口**：只用 DOM 契约（`[data-conversation-scroll]`、`[data-composer-input]`、`[data-conversation-session]`）、官方槽位（0.2.x 的 `conversation.input.overlay`）与宿主 `webServer` 的 HTTP 路由；**不使用** typert 生成式远程接口，也不读内部 store 结构。
+- **低耦合接口**：只用 DOM 契约（`[data-conversation-scroll]`、`[data-composer-input]`、`[data-conversation-session]`）、官方槽位（0.2.x 的 `conversation.input.overlay`、`[data-text-interaction-surface]`）与宿主 `webServer` 的 HTTP 路由；**不使用** typert 生成式远程接口，也不读内部 store 结构。
 - **回退**：同一能力尽量留两条路 —— 当前会话 ID（DOM 属性优先 → sessions store 兜底）；发送注入（shell API 优先 → 点发送按钮时由插件接管 → 桥不可用时保留批注并告警）。
-- **自测**：`npm test`（140 项）覆盖客户端 jsdom、刷新重挂载、宿主路由与文件往返、多窗口合并与删除防复活、旧存储格式迁移、上下文定位与失锚标记、单次遍历的重绘性能、会话 ID 的优先级与回退、以及"能力缺失必须告警且不丢批注"。
+- **自测**：`npm test`（151 项）覆盖客户端 jsdom、刷新重挂载、宿主路由与文件往返、多窗口合并与删除防复活、旧存储格式迁移、上下文定位与失锚标记、单次遍历的重绘性能、会话 ID 的优先级与回退、以及"能力缺失必须告警且不丢批注"。
 - **升级 DSH 之后**：先跑 `npm test`，再手测一遍（选中 → 批注 → 发送）；若控制台出现 `[dsh-inline-comments]` 开头的告警，告警里点名的那条接口就是这次被移动的，按它适配即可。
 
 ## 反馈
