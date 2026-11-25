@@ -60,8 +60,8 @@ LICENSE             MIT
 
 面向**最新版 DSH** 开发，不追求兼容所有旧版本；但接口一律走低耦合通道，并把"取不到接口"变成**看得见的日志**，而不是静默失效（静默失效的典型症状：批注加得上、却发不出去）。
 
-- **测试基准**：桌面版（`/Applications/DeepSeek Harness.app`，当前 `0.2.1-rc.3`）—— 它比 Homebrew 的 CLI 发行版更新，插件的新接口风险会先在它这里暴露。
-- **已实测**：`0.2.1-rc.3` / `0.2.0-rc.2`（桌面版，0.2.x 走 `conversation.input.overlay` 槽位桥接）、`0.1.7-rc.2`、`0.1.5-rc.1`（web profile）。
+- **测试基准**：桌面版（`/Applications/DeepSeek Harness.app`，当前 `0.2.2-rc.5`）—— 它比 Homebrew 的 CLI 发行版更新，插件的新接口风险会先在它这里暴露。
+- **已实测**：`0.2.2-rc.5` / `0.2.1-rc.3` / `0.2.0-rc.2`（桌面版：0.2.x 走 `conversation.input.overlay` 槽位桥接；选中文字的入口在官方工具条出现时注入其中，否则回退浮动按钮）、`0.1.7-rc.2`、`0.1.5-rc.1`（web profile）。
 - **低耦合接口**：只用 DOM 契约（`[data-conversation-scroll]`、`[data-composer-input]`、`[data-conversation-session]`）、官方槽位（0.2.x 的 `conversation.input.overlay`、`[data-text-interaction-surface]`）与宿主 `webServer` 的 HTTP 路由；**不使用** typert 生成式远程接口，也不读内部 store 结构。
 - **回退**：同一能力尽量留两条路 —— 当前会话 ID（DOM 属性优先 → sessions store 兜底）；发送注入（shell API 优先 → 点发送按钮时由插件接管 → 桥不可用时保留批注并告警）。
 - **自测**：`npm test`（155 项）覆盖客户端 jsdom、刷新重挂载、宿主路由与文件往返、多窗口合并与删除防复活、旧存储格式迁移、上下文定位与失锚标记、单次遍历的重绘性能、会话 ID 的优先级与回退、以及"能力缺失必须告警且不丢批注"。

@@ -1,20 +1,22 @@
 {
   "releaseTargets": [
-    "0.2.1-rc.3"
+    "0.2.2-rc.5"
   ],
-  "latestTested": "0.2.1-rc.3",
+  "latestTested": "0.2.2-rc.5",
   "supported": [
     "0.1.5-rc.1",
     "0.1.7-rc.2",
     "0.2.0-rc.2",
-    "0.2.1-rc.3"
+    "0.2.1-rc.3",
+    "0.2.2-rc.5"
   ],
   "policy": "latest-targeted, low-coupling, fallbacks, self-tested",
   "interfaces": {
     "dom": [
       "[data-conversation-scroll]",
       "[data-composer-input]",
-      "[data-conversation-session]"
+      "[data-conversation-session]",
+      "[data-text-interaction-surface] (0.2.x official text toolbar; optional)"
     ],
     "slots": [
       "conversation.input.overlay (0.2.x composer bridge)"
@@ -35,5 +37,5 @@
     "sessions.list.getSnapshot().current (0.1.5)"
   ],
   "selfTest": "npm test",
-  "note": "0.2.x exposes the composer draft/actions only through the conversation.input.overlay slot occupant; the legacy shell path is tried first so 0.1.x keeps working."
+  "note": "0.2.x exposes the composer draft/actions only through the conversation.input.overlay slot occupant; the legacy shell path is tried first so 0.1.x keeps working. On 0.2.x the annotation action is injected into the official text-selection toolbar (data-text-interaction-surface) when present and falls back to the floating pill otherwise. Verified against 0.2.2-rc.5."
 }
